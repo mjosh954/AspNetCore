@@ -220,6 +220,13 @@ $@"<Project>
             return new AspNetProcess(Output, TemplateOutputDir, ProjectName, publish);
         }
 
+        public void BuildProject()
+        {
+            ProcessEx
+                .Run(Output, TemplateOutputDir, DotNetMuxer.MuxerPathOrDefault(), $"build")
+                .WaitForExit(assertSuccess: true);
+        }
+
         public void Dispose()
         {
             DeleteOutputDirectory();

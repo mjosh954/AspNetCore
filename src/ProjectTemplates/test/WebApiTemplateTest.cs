@@ -16,10 +16,12 @@ namespace Templates.Test
 
         public Project Project { get; }
 
-        [Fact]
-        public void WebApiTemplate()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("F#")]
+        public void WebApiTemplate(string languageOverride)
         {
-            Project.RunDotNetNew("webapi");
+            Project.RunDotNetNew("webapi", language: languageOverride);
 
             foreach (var publish in new[] { false, true })
             {
