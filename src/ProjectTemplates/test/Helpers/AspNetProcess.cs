@@ -19,11 +19,11 @@ namespace Templates.Test.Helpers
     public class AspNetProcess : IDisposable
     {
         private const string ListeningMessagePrefix = "Now listening on: ";
-
-        private readonly ProcessEx _process;
         private readonly Uri _listeningUri;
         private readonly HttpClient _httpClient;
         private readonly ITestOutputHelper _output;
+
+        internal ProcessEx Process { get; }
 
         public AspNetProcess(
             ITestOutputHelper output,
@@ -46,7 +46,7 @@ namespace Templates.Test.Helpers
 
             output.WriteLine("Running ASP.NET application...");
 
-            _process = ProcessEx.Run(output, workingDirectory, DotNetMuxer.MuxerPathOrDefault(), $"exec {dllPath}", envVars: environmentVariables);
+            Process = ProcessEx.Run(output, workingDirectory, DotNetMuxer.MuxerPathOrDefault(), $"exec {dllPath}", envVars: environmentVariables);
             _listeningUri = GetListeningUri(output);
         }
 
@@ -84,22 +84,28 @@ namespace Templates.Test.Helpers
         {
             // Wait until the app is accepting HTTP requests
             output.WriteLine("Waiting until ASP.NET application is accepting connections...");
-            var listeningMessage = _process
+            var listeningMessage = Process
                 .OutputLinesAsEnumerable
                 .Where(line => line != null)
                 .FirstOrDefault(line => line.Trim().StartsWith(ListeningMessagePrefix, StringComparison.Ordinal));
-            Assert.True(!string.IsNullOrEmpty(listeningMessage), $"ASP.NET process exited without listening for requests.\nOutput: { _process.Output }\nError: { _process.Error }");
-            listeningMessage = listeningMessage.Trim();
 
-            // Verify we have a valid URL to make requests to
-            var listeningUrlString = listeningMessage.Substring(ListeningMessagePrefix.Length);
-            output.WriteLine($"Detected that ASP.NET application is accepting connections on: {listeningUrlString}");
-            listeningUrlString = listeningUrlString.Substring(0, listeningUrlString.IndexOf(':')) +
-                "://localhost" +
-                listeningUrlString.Substring(listeningUrlString.LastIndexOf(':'));
+            if (!string.IsNullOrEmpty(listeningMessage))
+            {
+                listeningMessage = listeningMessage.Trim();
+                // Verify we have a valid URL to make requests to
+                var listeningUrlString = listeningMessage.Substring(ListeningMessagePrefix.Length);
+                output.WriteLine($"Detected that ASP.NET application is accepting connections on: {listeningUrlString}");
+                listeningUrlString = listeningUrlString.Substring(0, listeningUrlString.IndexOf(':')) +
+                    "://localhost" +
+                    listeningUrlString.Substring(listeningUrlString.LastIndexOf(':'));
 
-            output.WriteLine("Sending requests to " + listeningUrlString);
-            return new Uri(listeningUrlString, UriKind.Absolute);
+                output.WriteLine("Sending requests to " + listeningUrlString);
+                return new Uri(listeningUrlString, UriKind.Absolute);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public Task AssertOk(string requestUrl)
@@ -107,6 +113,11 @@ namespace Templates.Test.Helpers
 
         public Task AssertNotFound(string requestUrl)
             => AssertStatusCode(requestUrl, HttpStatusCode.NotFound);
+
+        internal Task<HttpResponseMessage> SendRequest(string path)
+        {
+            return _httpClient.GetAsync(path);
+        }
 
         public async Task AssertStatusCode(string requestUrl, HttpStatusCode statusCode, string acceptContentType = null)
         {
@@ -126,7 +137,7 @@ namespace Templates.Test.Helpers
         public void Dispose()
         {
             _httpClient.Dispose();
-            _process.Dispose();
+            Process.Dispose();
         }
     }
 }

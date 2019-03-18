@@ -47,6 +47,8 @@ namespace Templates.Test.Helpers
 
         public Task Exited => _exited.Task;
 
+        public bool HasExited => _process.HasExited;
+
         public string Error
         {
             get

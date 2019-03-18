@@ -1,12 +1,13 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Microsoft.AspNetCore.E2ETesting;
-using Newtonsoft.Json.Linq;
-using OpenQA.Selenium;
+using System;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.E2ETesting;
+using Newtonsoft.Json.Linq;
+using OpenQA.Selenium;
 using Templates.Test.Helpers;
 using Xunit;
 using Xunit.Abstractions;
@@ -87,6 +88,8 @@ namespace Templates.Test.SpaTemplateTest
 
             using (var aspNetProcess = Project.StartBuiltProjectAsync())
             {
+                Assert.False(aspNetProcess.Process.HasExited, ErrorMessages.GetErrorMessage("Run built project", Project, aspNetProcess.Process));
+                await WarmUpServer(aspNetProcess);
                 await aspNetProcess.AssertStatusCode("/", HttpStatusCode.OK, "text/html");
 
                 if (BrowserFixture.IsHostAutomationSupported())
@@ -103,6 +106,9 @@ namespace Templates.Test.SpaTemplateTest
 
             using (var aspNetProcess = Project.StartPublishedProjectAsync())
             {
+                Assert.False(aspNetProcess.Process.HasExited, ErrorMessages.GetErrorMessage("Run published project", Project, aspNetProcess.Process));
+
+                await WarmUpServer(aspNetProcess);
                 await aspNetProcess.AssertStatusCode("/", HttpStatusCode.OK, "text/html");
 
                 if (BrowserFixture.IsHostAutomationSupported())
@@ -111,6 +117,22 @@ namespace Templates.Test.SpaTemplateTest
                     TestBasicNavigation(visitFetchData: !usesAuth);
                 }
             }
+        }
+
+        private static async Task WarmUpServer(AspNetProcess aspNetProcess)
+        {
+            var attempt = 0;
+            var maxAttempts = 3;
+            do
+            {
+                attempt++;
+                var response = await aspNetProcess.SendRequest("/");
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    break;
+                }
+                await Task.Delay(TimeSpan.FromSeconds(5 * attempt));
+            } while (attempt < maxAttempts);
         }
 
         private void UpdatePublishedSettings()

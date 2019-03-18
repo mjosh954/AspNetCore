@@ -42,12 +42,16 @@ namespace Templates.Test
 
             using (var aspNetProcess = Project.StartBuiltProjectAsync())
             {
+                Assert.False(aspNetProcess.Process.HasExited, ErrorMessages.GetErrorMessage("Run built project", Project, aspNetProcess.Process);
+
                 await aspNetProcess.AssertOk("/api/values");
                 await aspNetProcess.AssertNotFound("/");
             }
 
             using (var aspNetProcess = Project.StartPublishedProjectAsync())
             {
+                Assert.False(aspNetProcess.Process.HasExited, ErrorMessages.GetErrorMessage("Run published project", Project, aspNetProcess.Process);
+
                 await aspNetProcess.AssertOk("/api/values");
                 await aspNetProcess.AssertNotFound("/");
             }
