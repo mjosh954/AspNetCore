@@ -29,11 +29,11 @@ function _killSeleniumTrackedProcesses() {
         Where-Object { $_.Name -match "([0-9]+)\..*?.pid"; } |
         Foreach-Object { $Matches[1] };
 
-    foreach ($pid in $pids) {
+    foreach ($currentPid in $pids) {
         try {
-            & cmd /c "taskkill /T /F /PID $pid 2>&1"
+            & cmd /c "taskkill /T /F /PID $currentPid 2>&1"
         } catch {
-            Write-Host "Failed to kill process: $pid"
+            Write-Host "Failed to kill process: $currentPid"
         }
     }
 }
