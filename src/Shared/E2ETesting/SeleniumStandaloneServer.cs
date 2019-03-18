@@ -139,17 +139,7 @@ namespace Microsoft.AspNetCore.E2ETesting
 
             void LogOutput(object sender, DataReceivedEventArgs e)
             {
-                // We only log on the ITestOutput while we are initializing as if we keep logging after initialization
-                // the ITestOutputHelper will become invalid.
-                if (output != null)
-                {
-                    lock (output)
-                    {
-                        // This is dangerous as sometimes it gets called when it's not initialized.
-                        // This can happen when the process is being shutdown.
-                        output.WriteLine(e.Data);
-                    }
-                }
+                // We avoid logging on the output here because it is unreliable. We can only log in the diagnostics sink.
                 lock (_diagnosticsMessageSink)
                 {
                     _diagnosticsMessageSink.OnMessage(new DiagnosticMessage(e.Data));
