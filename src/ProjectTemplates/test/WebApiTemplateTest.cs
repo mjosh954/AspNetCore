@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Threading.Tasks;
 using ProjectTemplates.Tests.Helpers;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,7 +20,7 @@ namespace Templates.Test
         [Theory]
         [InlineData(null)]
         [InlineData("F#")]
-        public void WebApiTemplate(string languageOverride)
+        public async Task WebApiTemplate(string languageOverride)
         {
             Project.RunDotNetNew("webapi", language: languageOverride);
 
@@ -27,7 +28,7 @@ namespace Templates.Test
             {
                 using (var aspNetProcess = Project.StartAspNetProcess(publish))
                 {
-                    aspNetProcess.AssertOk("/api/values");
+                    await aspNetProcess.AssertLinksWork("/api/values");
                     aspNetProcess.AssertNotFound("/");
                 }
             }
